@@ -1,2 +1,2 @@
 # Fantaser
-My first clicker game based around getting essences of multiple elements and unlocking specific creatures.
+Fantaser is a clicker game where you gather resources by using shrines, craft materials and summon familiars that help you store even more resources. Can you max out all your familiars?

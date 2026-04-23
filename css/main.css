@@ -1,0 +1,48 @@
+body {
+    background-color: darkcyan;
+    color: black;
+}
+
+button {
+    border-radius: 5px;
+    background-color: lightgreen;
+}
+
+.resource-generation {
+    background-color: gray;
+    border: 1px solid black;
+}
+
+.resource-display {
+    box-sizing: border-box;
+    background-color: lightgray;
+    border: 1px solid black;
+    display: flex;
+    font-size: xx-large;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0% 1%;
+    /* width: 10%; */
+}
+
+.resource-icon {
+    border: 1px solid black;
+    width: 25px;
+}
+
+/* #resources-display { */
+    /* display: flex; */
+    /* justify-content: space-between; */
+    /* padding: 0% 2%; */
+/* } */
+
+/* .resource-value { */
+    /* background-color: blue;
+    position: absolute;
+    top: 50%;
+    height: 1em;
+    margin-top: -.5em;
+    float: right;
+    margin-right: 0; */
+/* } */
