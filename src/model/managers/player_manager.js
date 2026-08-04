@@ -22,4 +22,5 @@ export class PlayerManager {
     // PUBLIC FUNCTIONS
     ////////////////////////////////////////////////
     increaseResourceAmount(_resourceId, amount) { return this.resources[_resourceId].increaseAmount(amount); }
+    removeResourceAmount(_resourceId, amount) { this.resources[_resourceId].decreaseAmount(amount); }
 }
