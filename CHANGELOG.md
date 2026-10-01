@@ -4,3 +4,6 @@
 
 ## 0.2.0
  - The player can now level up the Rifts to generate more Essence per click
+
+## 0.3.0
+ - The player can now level up their level with resources they generate to increase the storage space and unlock new resources.
