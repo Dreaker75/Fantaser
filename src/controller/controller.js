@@ -1,6 +1,5 @@
-import { ELEMENTS, RESOURCES } from "../model/data/constants.js";
+import { MENUS, RESOURCES } from "../model/data/constants.js";
 import { PlayerManager } from "../model/managers/player_manager.js";
-import { Rift } from "../model/entities/rift.js";
 import { View } from "../view/view.js";
 import { RiftsManager } from "../model/managers/rifts_manager.js";
 
@@ -11,6 +10,7 @@ export class Controller {
     #view;
 
     // Data Variables
+    #currentMenu;
     // NOTE: This is not properly protected, as it doesn't check that the Rift currently opened lines up with this variable, if it's modified manually by the player
     #currentRiftSelected;
 
@@ -18,6 +18,7 @@ export class Controller {
         this.#playerManager = new PlayerManager();
         this.#riftsManager = new RiftsManager();
 
+        this.#currentMenu = MENUS.RIFTS;
         this.#currentRiftSelected = "";
 
         // Grab the resource templates
@@ -36,9 +37,6 @@ export class Controller {
                 // Create new elements based on the templats
                 let newResource = resourceTemplate.content.cloneNode(true);
                 let newResourceGeneration = resourceGenerationTemplate.content.cloneNode(true);
-
-                // Obtain the display name for the current Element
-                let element = ELEMENTS[resource.ELEMENT].DISPLAY_NAME;
 
                 // Set up the tier 1 resources
                 newResource.querySelector("img").src += resource.DISPLAY_NAME + " Icon.png";
@@ -107,6 +105,33 @@ export class Controller {
                 this.#view.updateRiftDisplay(resource.ELEMENT, 1, this.#riftsManager.getImageName(resource.ELEMENT), this.#riftsManager.getImageAlt(resource.ELEMENT), capacity > 0);
             }
         });
+
+        this.#view.initializePlayerMenuDisplay();
+
+        // Update the storage and level up values on the Player menu
+        this.#view.updatePlayerMenuDisplay(this.#playerManager.getAllResourcesCapacities(), this.#playerManager.getLevel(), this.#playerManager.getNextLevelReqInfo());
+    }
+
+    /**
+     * Closes the current menu and opens the new one
+     * - if the new menu is the same as the current menu, does nothing
+     * @param {MENUS} newMenu A constant with the name of the new menu to open
+     */
+    openNewMenu = newMenu => {
+        // We're already in the menu, we don't need to do anything.
+        // NOTE: We could keep it for an easier way to refresh the page?
+        if (newMenu === this.#currentMenu) {
+            return;
+        }
+
+        // Close current menu
+        this.#view.closeMainMenu(this.#currentMenu);
+
+        // Update the current menu
+        this.#currentMenu = newMenu;
+
+        // Open the new menu
+        this.#view.openMainMenu(this.#currentMenu);
     }
 
     /**
@@ -166,6 +191,58 @@ export class Controller {
         this.#view.updateRiftDisplay(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected), this.#riftsManager.getImageName(this.#currentRiftSelected), this.#riftsManager.getImageAlt(this.#currentRiftSelected));
     }
 
+    /**
+     * Checks if the level up requirements are fulfilled, levels up the player if they are, and updates the player menu accordingly
+     */
+    levelUpPlayer = () => {
+        let requirementFulfilled = true;
+
+        // Obtain the next level requirements
+        let requirements = this.#playerManager.getNextLevelReqInfo();
+
+        // The player is currently at max level, return
+        // NOTE: This should not be hit normally, as the level up button would be hidden if that's the case
+        // NOTE: Might need to check requirements is a proper value and not undefined and so on?
+        if (requirements === null) {
+            return;
+        }
+
+        Array.from(requirements).forEach(req => {
+            // If the requirement for the current resource hasn't been fulfilled, we set reqsFulfilled to false. Otherwise we leave it as is.
+            // NOTE: This converts reqsFulfilled to a number! (0 or 1)
+            requirementFulfilled &= req.FULFILLED;
+        });
+
+        // All requirements were fulfilled, level up the player
+        if (requirementFulfilled) {
+            this.#playerManager.levelUp();
+            
+            // Remove the appropiate resources from the Player's storage
+            Array.from(requirements).forEach(req => {
+                this.#playerManager.removeResourceAmount(req.RESOURCE, req.AMOUNT);
+
+                // If the Resource modified was a Tier 1 resource
+                // TODO: Might have to come back and revise this if a display for a tier 2+ resource is added
+                if (RESOURCES[req.RESOURCE].TIER === 1) {
+                    let amount = this.#playerManager.getResourceAmount(req.RESOURCE);
+                    // Update its display on the main page
+                    this.#view.updateResourceDisplay(RESOURCES[req.RESOURCE].ELEMENT, amount, this.#playerManager.getResourceCapacity(req.RESOURCE) === amount);
+                }
+            });
+        }
+        
+        // Update the Player menu with the new values
+        this.#view.updatePlayerMenuDisplay(this.#playerManager.getAllResourcesCapacities(), this.#playerManager.getLevel(), this.#playerManager.getNextLevelReqInfo());
+    }
+
+    /**
+     * Updates the level up Player Modal
+     */
+    updateLevelUpPlayerModal = () => {
+        // Update the storage and level up values on the Player menu
+        this.#view.updateLevelUpPlayerModal(this.#playerManager.getNextLevelReqInfo());
+    }
+
     ////////////////////////////////////
     // HELPER FUNCTIONS
     ////////////////////////////////////
@@ -174,7 +251,7 @@ export class Controller {
         let nextLevelRequirements = this.#riftsManager.getNextLevelRequirement(this.#currentRiftSelected);
 
         // There either was an error, or the Rift is max Level
-        if (nextLevelRequirements === undefined) {
+        if (nextLevelRequirements === null) {
             // Close the modal if it's open
             this.#view.closeLevelUpRiftModal();
             // Ignore the rest of the code

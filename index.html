@@ -31,38 +31,90 @@
       <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#level-up-rift-modal">Level Up</button>
     </div>
   </template>
+  <template id="element-storage-template">
+    <div class="element-capacity-div">
+      <h4 class="element-name">ELEMENT NAME</h4>
+      <div class="container">
+        <div class="resources-div row">
+        </div>
+      </div>
+    </div>
+  </template>
+  <template id="resource-storage-template">
+    <div class="col-md-3 col-sm-6 col-12 p-1">
+      <div class="resource-capacity-div">
+        <h5 class="resource-name">RESOURCE NAME</h5>
+        <p class="resource-max-amount">1000000</p>
+      </div>
+    </div>
+  </template>
+  <template id="resource-requirement-template">
+    <p class="resource-requirement-div"><img src="images/" alt="">
+      <span class="fulfilled-icon">X</span> <span class="resource-name">RESOURCE NAME</span>:
+      <span class="resource-amount">XXX</span>/<span class="resource-amount-required">XXX</span>
+    </p>
+  </template>
   <header>
     <div class="row m-1 justify-content-center" id="resources-display">
     </div>
     <nav>
-      <button>Rifts</button>
-      <button disabled>Player</button>
+      <button id="rifts-menu-button">Rifts</button>
+      <button id="player-menu-button">Player</button>
       <button disabled>Craft</button>
     </nav>
   </header>
-  <div class="row justify-content-center text-center" id="resources-generation">
-  </div>
-  <div id="level-up-rift-modal" class="modal fade">
-    <div class="modal-dialog text-center">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title">NAME OF THE RIFT</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <main>
+    <div id="rifts-menu">
+      <div class="row justify-content-center text-center" id="resources-generation">
+      </div>
+    </div>
+    <div id="player-menu">
+      <div id="player-level-info">
+        <h2>Level <span class="player-level">1</span></h2>
+        <div id="player-level-up-info">
+          <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#level-up-player-modal">Level Up</button>
         </div>
-        <div class="modal-body">
-          <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">ELEMENTAL ESSENCE</span>:
-            <span class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-          <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 1</span>: <span
-              class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-          <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 2</span>: <span
-              class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-          <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 3</span>: <span
-              class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-          <button id="level-up-rift-button" disabled>Level up</button>
+      </div>
+      <div id="storage">
+        <h3>Resources Capacity</h3>
+      </div>
+    </div>
+    <div id="level-up-rift-modal" class="modal fade">
+      <div class="modal-dialog text-center">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">NAME OF THE RIFT</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">ELEMENTAL ESSENCE</span>:
+              <span class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
+            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 1</span>: <span
+                class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
+            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 2</span>: <span
+                class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
+            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 3</span>: <span
+                class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
+            <button id="level-up-rift-button" disabled>Level up</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+    <div id="level-up-player-modal" class="modal fade">
+      <div class="modal-dialog text-center">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">PLAYER LEVEL</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <button id="level-up-player-button" disabled>Level up</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer></footer>
   <script type="module" src="src/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
