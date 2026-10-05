@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////
 // Magic Numbers
-// The maximum number of different items requested at once to level up the player
-export const PLAYER_LEVEL_MAX_NUM_ITEMS = 5;
+// The maximum number of different items requested at once to level up, craft items, etc
+export const MAX_NUM_ITEM_REQS = 5;
 
 ////////////////////////////////////////////////
 // Special Strings
@@ -306,13 +306,13 @@ export const RESOURCES = {
 ////////////////////////////////////////////////
 // Rift Generation
 export const GENERATION = {};
-GENERATION[ELEMENTS.FIRE.ID] =
-    GENERATION[ELEMENTS.WATER.ID] =
-    GENERATION[ELEMENTS.WIND.ID] =
-    GENERATION[ELEMENTS.EARTH.ID] =
-    GENERATION[ELEMENTS.THUNDER.ID] =
-    GENERATION[ELEMENTS.LIGHT.ID] =
-    GENERATION[ELEMENTS.DARK.ID] = [
+GENERATION[RESOURCES.FIRE_ESSENCE.ID] =
+    GENERATION[RESOURCES.WATER_ESSENCE.ID] =
+    GENERATION[RESOURCES.WIND_ESSENCE.ID] =
+    GENERATION[RESOURCES.EARTH_ESSENCE.ID] =
+    GENERATION[RESOURCES.THUNDER_ESSENCE.ID] =
+    GENERATION[RESOURCES.LIGHT_ESSENCE.ID] =
+    GENERATION[RESOURCES.DARK_ESSENCE.ID] = [
         1, 2, 4, 6, 9,
         12, 16, 20, 25, 30,
         36, 42, 49, 56, 64,
@@ -325,7 +325,7 @@ GENERATION[ELEMENTS.FIRE.ID] =
         552, 576, 600, 625, 650
     ];
 
-GENERATION[ELEMENTS.CLEAR.ID] = [
+GENERATION[RESOURCES.CLEAR_SHARD.ID] = [
     1, 5, 10, 15, 20,
     30, 40, 50, 70, 90,
     110, 130, 150, 180, 210,
@@ -338,7 +338,7 @@ GENERATION[ELEMENTS.CLEAR.ID] = [
     3400, 3700, 4000, 4500, 5000
 ];
 
-GENERATION[ELEMENTS.ENERGY.ID] = [
+GENERATION[RESOURCES.BYTE_ENERGY.ID] = [
     1, 2, 3, 4, 5,
     6, 7, 8, 9, 10
 ];

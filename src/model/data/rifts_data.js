@@ -5,7 +5,7 @@ export class RiftsData {
 
     constructor() {
         // We store the level up requirements for all Rifts
-        this.levelUpRequirements[ELEMENTS.CLEAR.ID] = [
+        this.levelUpRequirements[RESOURCES.CLEAR_SHARD.ID] = [
             // Level 1
             [
                 {RESOURCE: RESOURCES.CLEAR_SHARD.ID, AMOUNT: 5}
@@ -204,7 +204,7 @@ export class RiftsData {
             ],
         ];
 
-        this.levelUpRequirements[ELEMENTS.ENERGY.ID] = [
+        this.levelUpRequirements[RESOURCES.BYTE_ENERGY.ID] = [
             // Level 1
             [
                 {RESOURCE: RESOURCES.BYTE_ENERGY.ID, AMOUNT: 11},
@@ -488,23 +488,24 @@ export class RiftsData {
     /**
      * Function to obtain the level up requirements to reach the next Rift level
      * @param {Number} level The current level of the Rift
-     * @param {string} element The ID of the Rift's Element
+     * @param {string} resource The ID of the Rift's Resource
      * @returns The requirements to level up the Rift
      */
-    getLevelUpRequirements = (level, element) => {
+    getLevelUpRequirements = (level, resource) => {
         // The level cannot be less than 1
         if (level < 1) {
             return null;
         }
 
         // We check for Clear and Energy Rifts first, since they're easier to handle
-        if (ELEMENTS.CLEAR.ID === element || ELEMENTS.ENERGY.ID === element) {
+        if (RESOURCES.CLEAR_SHARD.ID === resource || RESOURCES.BYTE_ENERGY.ID === resource) {
             // The level cannot be higher than the amount of elements in the level up array
-            if (this.levelUpRequirements[element].length < level) {
+
+            if (this.levelUpRequirements[resource].length < level) {
                 return null;
             }
 
-            return this.levelUpRequirements[element][level - 1];
+            return this.levelUpRequirements[resource][level - 1];
         }
 
         // The level cannot be higher than the amount of elements in the level up array
@@ -515,44 +516,44 @@ export class RiftsData {
         let tier1, tier2, tier3, tier4;
 
         // Grab the corresponding resource based on the Element received
-        switch (element) {
-            case ELEMENTS.FIRE.ID:
+        switch (resource) {
+            case RESOURCES.FIRE_ESSENCE.ID:
                 tier1 = RESOURCES.FIRE_ESSENCE.ID;
                 tier2 = RESOURCES.FIRE_FRAGMENT.ID;
                 tier3 = RESOURCES.FIRE_GEM.ID;
                 tier4 = RESOURCES.RUBY.ID;
                 break;
-            case ELEMENTS.WATER.ID:
+            case RESOURCES.WATER_ESSENCE.ID:
                 tier1 = RESOURCES.WATER_ESSENCE.ID;
                 tier2 = RESOURCES.WATER_FRAGMENT.ID;
                 tier3 = RESOURCES.WATER_GEM.ID;
                 tier4 = RESOURCES.SAPPHIRE.ID;
                 break;
-            case ELEMENTS.WIND.ID:
+            case RESOURCES.WIND_ESSENCE.ID:
                 tier1 = RESOURCES.WIND_ESSENCE.ID;
                 tier2 = RESOURCES.WIND_FRAGMENT.ID;
                 tier3 = RESOURCES.WIND_GEM.ID;
                 tier4 = RESOURCES.EMERALD.ID;
                 break;
-            case ELEMENTS.THUNDER.ID:
+            case RESOURCES.THUNDER_ESSENCE.ID:
                 tier1 = RESOURCES.THUNDER_ESSENCE.ID;
                 tier2 = RESOURCES.THUNDER_FRAGMENT.ID;
                 tier3 = RESOURCES.THUNDER_GEM.ID;
                 tier4 = RESOURCES.TOPAZ.ID;
                 break;
-            case ELEMENTS.EARTH.ID:
+            case RESOURCES.EARTH_ESSENCE.ID:
                 tier1 = RESOURCES.EARTH_ESSENCE.ID;
                 tier2 = RESOURCES.EARTH_FRAGMENT.ID;
                 tier3 = RESOURCES.EARTH_GEM.ID;
                 tier4 = RESOURCES.ZIRCON.ID;
                 break;
-            case ELEMENTS.LIGHT.ID:
+            case RESOURCES.LIGHT_ESSENCE.ID:
                 tier1 = RESOURCES.LIGHT_ESSENCE.ID;
                 tier2 = RESOURCES.LIGHT_FRAGMENT.ID;
                 tier3 = RESOURCES.LIGHT_GEM.ID;
                 tier4 = RESOURCES.DIAMOND.ID;
                 break;
-            case ELEMENTS.DARK.ID:
+            case RESOURCES.DARK_ESSENCE.ID:
                 tier1 = RESOURCES.DARK_ESSENCE.ID;
                 tier2 = RESOURCES.DARK_FRAGMENT.ID;
                 tier3 = RESOURCES.DARK_GEM.ID;

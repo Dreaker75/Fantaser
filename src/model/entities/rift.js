@@ -1,23 +1,24 @@
 import { ELEMENTS, GENERATION, RESOURCES } from "../data/constants.js";
 
 export class Rift {
-    elementId;
+    #resourceId;
+    #elementId;
     level;
     amountGenerated;
     #elementDisplayName;
 
-    constructor(_elementId, _level) {
-        this.elementId = _elementId;
+    constructor(_resourceId, _level) {
+        this.#resourceId = _resourceId;
+        this.#elementId = RESOURCES[_resourceId].ELEMENT;
         this.level = _level;
-        this.amountGenerated = (this.level >= 1 && this.level < GENERATION[this.elementId].length) ? GENERATION[this.elementId][this.level - 1] : 0;
-        this.#elementDisplayName = ELEMENTS[this.elementId].DISPLAY_NAME;
+        this.amountGenerated = (this.level >= 1 && this.level < GENERATION[this.#resourceId].length) ? GENERATION[this.#resourceId][this.level - 1] : 0;
+        this.#elementDisplayName = ELEMENTS[this.#elementId].DISPLAY_NAME;
     }
 
     /*******************
      * GETTERS
      ******************/
     getName = () => { return this.#elementDisplayName + " Rift"; }
-    getElementId = () => { return this.elementId; }
     getLevel = () => { return this.level; }
     getAmountGenerated = () => { return this.amountGenerated; }
     getImageName = () => { return this.#elementDisplayName + "Rift" + (Math.floor(this.level / 10) + 1); }
@@ -30,14 +31,14 @@ export class Rift {
      */
     setLevel = newLevel => {
         // Check if the new level is correct
-        if (newLevel <= 0 || newLevel > GENERATION[this.elementId].length) {
+        if (newLevel <= 0 || newLevel > GENERATION[this.#resourceId].length) {
             return false;
         }
 
         this.level = newLevel;
 
         // Update amountGenerated to the new amount
-        this.amountGenerated = GENERATION[this.elementId][this.level - 1];
+        this.amountGenerated = GENERATION[this.#resourceId][this.level - 1];
 
         return true;
     }
@@ -47,7 +48,7 @@ export class Rift {
      */
     levelUpRift = () => {
         // Check the Rift isn't already max level
-        if (level === GENERATION[this.elementId].length) {
+        if (level === GENERATION[this.#resourceId].length) {
             return;
         }
         

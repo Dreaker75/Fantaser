@@ -7,3 +7,6 @@
 
 ## 0.3.0
  - The player can now level up their level with resources they generate to increase the storage space and unlock new resources.
+
+## 0.3.1
+ - Cleaned up and removed duplicated code

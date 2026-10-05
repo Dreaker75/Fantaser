@@ -12,27 +12,27 @@
 
 <body>
   <template id="resource-display-template">
-    <div class="col-2 col-lg-3 col-md-4 col-sm-6 col-12 resource-display" data-element="">
+    <div class="col-2 col-lg-3 col-md-4 col-sm-6 col-12 resource-display" data-resource="">
       <img class="resource-icon" name="resource-display-icon" src="images/" alt="">
       <span name="resource-display-value"></span>
     </div>
   </template>
   <template id="resource-generation-template">
-    <div class="col-2 col-lg-3 col-md-4 col-sm-6 col-12 py-3 resource-generation" data-element="">
+    <div class="col-2 col-lg-3 col-md-4 col-sm-6 col-12 py-3 resource-generation" data-resource="">
       <h2 name="resource-h2"></h2>
       <h3>Level <span class="rift-level">0</span></h3>
       <div class="grid">
         <div class="row py-3">
           <div>
-            <img src="images/" alt="">
+            <img class="clickable" src="images/" alt="">
           </div>
         </div>
       </div>
-      <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#level-up-rift-modal">Level Up</button>
+      <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#resources-check-modal">Level Up</button>
     </div>
   </template>
   <template id="element-storage-template">
-    <div class="element-capacity-div">
+    <div class="element-capacity-div" data-element="">
       <h4 class="element-name">ELEMENT NAME</h4>
       <div class="container">
         <div class="resources-div row">
@@ -42,7 +42,7 @@
   </template>
   <template id="resource-storage-template">
     <div class="col-md-3 col-sm-6 col-12 p-1">
-      <div class="resource-capacity-div">
+      <div class="resource-capacity-div" data-resource="">
         <h5 class="resource-name">RESOURCE NAME</h5>
         <p class="resource-max-amount">1000000</p>
       </div>
@@ -72,43 +72,23 @@
       <div id="player-level-info">
         <h2>Level <span class="player-level">1</span></h2>
         <div id="player-level-up-info">
-          <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#level-up-player-modal">Level Up</button>
+          <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#resources-check-modal">Level Up</button>
         </div>
       </div>
       <div id="storage">
         <h3>Resources Capacity</h3>
       </div>
     </div>
-    <div id="level-up-rift-modal" class="modal fade">
+    <!-- Modal used to check if the player has enough resources to level up, craft, etc -->
+    <div id="resources-check-modal" class="modal fade">
       <div class="modal-dialog text-center">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title">NAME OF THE RIFT</h2>
+            <h2 class="modal-title">FILL OUT THE MODAL TITLE</h2>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">ELEMENTAL ESSENCE</span>:
-              <span class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 1</span>: <span
-                class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 2</span>: <span
-                class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-            <p class="resource-condition"><img src="images/" alt=""><span class="resource-name">EXTRA ITEM 3</span>: <span
-                class="resource-amount">0</span>/<span class="resource-amount-required">100</span></p>
-            <button id="level-up-rift-button" disabled>Level up</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="level-up-player-modal" class="modal fade">
-      <div class="modal-dialog text-center">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title">PLAYER LEVEL</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <button id="level-up-player-button" disabled>Level up</button>
+            <button id="modal-button-check-successful" disabled>FILL OUT THE BUTTON'S TEXT</button>
           </div>
         </div>
       </div>
