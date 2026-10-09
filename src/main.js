@@ -17,9 +17,13 @@ document.addEventListener("DOMContentLoaded", () => {
         controller.openNewMenu(MENUS.PLAYER);
     });
 
+    document.getElementById("craft-menu-button").addEventListener("click", () => {
+        controller.openNewMenu(MENUS.CRAFT);
+    });
+
     // Clicking the button already displays the modal by itself. We add this event so it also automatically updates the display with correct values
     // NOTE: It's possible this may show incorrect values given certain circumstances until they are correctly updated, so a better way to do this would be ideal
-    document.getElementById("player-level-up-info").querySelector("button[name=level-up-button]").addEventListener("click", controller.updateLevelUpPlayerModal);
+    document.getElementById("player-level-up-info").querySelector("button[name='level-up-button']").addEventListener("click", controller.updateLevelUpPlayerModal);
 
     // NOTE: By the time this is hit, the element should be created, since it happens in the controller's constructor
     // Assign the generate Tier1 Resource function to every Rift
@@ -29,12 +33,18 @@ document.addEventListener("DOMContentLoaded", () => {
         // Store the parameters we need so the event can access them
         // Grab the parent element that has this Rift's associated Resource and assign it
         image.resourceClicked = image.closest(".resource-generation").dataset.resource;
-    })
+    });
 
     document.getElementById("resources-generation").querySelectorAll("button[name='level-up-button']").forEach(button => {
         button.addEventListener("click", controller.openRiftLevelUpModal, false);
         button.resourceClicked = button.closest(".resource-generation").dataset.resource;
-    })
+    });
+
+    // Assign the Crafting behavior to the "Craft" buttons
+    document.getElementById("crafting-list-div").querySelectorAll("button[name='craft-button']").forEach(button => {
+        button.addEventListener("click", controller.handleCraftResource, false);
+        button.resourceClicked = button.closest(".resource-craft-div").dataset.resource;
+    });
 
     document.getElementById("modal-button-check-successful").addEventListener("click", controller.handleModalSuccessButton);
 })

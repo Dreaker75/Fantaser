@@ -4,6 +4,7 @@ export class View {
     // Collection of elements that display the current amount of each resource
     #tier1ResourceDisplays = {};
     #riftDisplays = {};
+    #craftingReceipesDivs = {};
 
     // Menu elements
     #mainMenusDivs = {};
@@ -26,6 +27,7 @@ export class View {
     constructor() {
         this.#mainMenusDivs[MENUS.RIFTS] = document.getElementById("rifts-menu");
         this.#mainMenusDivs[MENUS.PLAYER] = document.getElementById("player-menu");
+        this.#mainMenusDivs[MENUS.CRAFT] = document.getElementById("craft-menu");
         
         this.#resourceCheckModal = document.getElementById("resources-check-modal");
         this.#resourceCheckModalTitle = this.#resourceCheckModal.querySelector(".modal-title");
@@ -63,7 +65,29 @@ export class View {
             // Save the resource in the dictionary
             this.#riftDisplays[resourceId] = resourceGeneration;
         });
+
+        // Obtain all crafting receipes
+        Array.from(document.querySelectorAll(".resource-craft-div")).forEach(craftingReceipe => {
+            // Grab the Resource ID from the element's data
+            let resourceId = craftingReceipe.dataset.resource;
+            // Save the resource in the dictionary
+            this.#craftingReceipesDivs[resourceId] = craftingReceipe;
+        });
     }
+
+    //#region Main menus
+    openMainMenu(menuToOpen) {
+        if (undefined !== this.#mainMenusDivs[menuToOpen]) {
+            this.#mainMenusDivs[menuToOpen].style.display = "block";
+        }
+    }
+
+    closeMainMenu(menuToClose) {
+        if (undefined !== this.#mainMenusDivs[menuToClose]) {
+            this.#mainMenusDivs[menuToClose].style.display = "none";
+        }
+    }
+    //#endregion
 
     /**
      * Initializes a specific resource's display
@@ -78,8 +102,11 @@ export class View {
         if (!_unlocked) {
             // TODO: Show the Locked icon on top of the resource icon, and maybe lock the rift as well (though still hide the name of the resources/rift)
             this.#tier1ResourceDisplays[_resourceId].querySelector("span").textContent = "?";
+            this.#tier1ResourceDisplays[_resourceId].querySelector("img[name='resource-display-icon']").src = "images/Unknown Resource Icon.png";
+            this.#tier1ResourceDisplays[_resourceId].querySelector("img[name='resource-display-icon']").alt = "Unknown Resource";
+
             this.#riftDisplays[_resourceId].querySelector("h2").textContent = "???";
-            this.#riftDisplays[_resourceId].querySelector("img").src = "images/UnknownRift1.png";
+            this.#riftDisplays[_resourceId].querySelector("img").src = "images/UnknownRift.png";
             this.#riftDisplays[_resourceId].querySelector("img").alt = "Unknown Rift";
             this.#riftDisplays[_resourceId].querySelector("button").setAttribute("disabled", "");
             return;
@@ -129,6 +156,8 @@ export class View {
     updateLevelUpPlayerModal(playerLevel, levelUpReqs) {
         // If the level up requirements are null, the player is already max level
         if (levelUpReqs === null) {
+            // Close the Modal if it's opened, like when levelling to Max Level
+            this.closeLevelUpModal();
             // Hide the button
             this.#buttonOpenPlayerLevelUpModal.setAttribute("hidden", "");
             return;
@@ -139,20 +168,6 @@ export class View {
         // Update the modal with the appropriate information
         this.#updateModalResourceRequirements(levelUpReqs, this.#resourceCheckModalReqsList, "Level " + playerLevel, "Level Up");
     }
-
-    //#region Main menus
-    openMainMenu(menuToOpen) {
-        if (undefined !== this.#mainMenusDivs[menuToOpen]) {
-            this.#mainMenusDivs[menuToOpen].style.display = "block";
-        }
-    }
-
-    closeMainMenu(menuToClose) {
-        if (undefined !== this.#mainMenusDivs[menuToClose]) {
-            this.#mainMenusDivs[menuToClose].style.display = "none";
-        }
-    }
-    //#endregion
 
     /**
      * Updates a specific resource's display
@@ -169,15 +184,6 @@ export class View {
         this.#tier1ResourceDisplays[_resourceId].querySelector("[name='resource-display-value']").textContent = _newAmount;
     }
 
-    unlockResource(_resourceId) {
-        // TODO: Play an animation and remove the lock from the Resource Icon
-        // TODO: Play an animation and unlock the Rift (Only applies to Tier 1 Resources)
-        // TODO: Change the name of the Rift and activate the button (Only applies to Tier 1 Resources)
-        if (RESOURCES[_resourceId].TIER === 1) {
-            this.#riftDisplays[_resourceId].querySelector("h2").textContent = RESOURCES[_resourceId].DISPLAY_NAME;
-        }
-    }
-
     /**
      * Updates the display of the specified Rift element
      * - Usually called after levelling up or unlocking a rift
@@ -185,23 +191,32 @@ export class View {
      * @param {Number} _currLevel Rift's current level
      * @param {string} _riftImage Name of the Rift's image (Without path or extension)
      * @param {string} _riftImageAlt Alternate text to display for the Rift image
+     * @param {boolean} _reachedMaxLevel Whether the Rift is at max level
      * @param {boolean} _unlocked Whether the rift is available
      */
-    updateRiftDisplay(_resourceId, _currLevel, _riftImage, _riftImageAlt, _unlocked = true) {
+    updateRiftDisplay(_resourceId, _currLevel, _riftImage, _riftImageAlt, _reachedMaxLevel = false, _unlocked = true) {
         // Only update the Rift if it is unlocked
         if (_unlocked) {
             this.#riftDisplays[_resourceId].querySelector(".rift-level").textContent = _currLevel;
             this.#riftDisplays[_resourceId].querySelector("img").src = "images/" + _riftImage + ".png";
             this.#riftDisplays[_resourceId].querySelector("img").alt = _riftImageAlt;
+
+            // Hide or show the button depending on whether the Rift has reached max Level
+            if (_reachedMaxLevel) {
+                this.#riftDisplays[_resourceId].querySelector("button[name='level-up-button']").setAttribute("hidden", "");
+            } else {
+                this.#riftDisplays[_resourceId].querySelector("button[name='level-up-button']").removeAttribute("hidden")
+            }
         }
     }
 
     /**
      * Updates the display of the Rift's level up modal
-     * @param {string} riftResource ID of the Rift's Resource
+     * @param {String} riftResource ID of the Rift's Resource
+     * @param {Number} currLevel The Rift's current level
      * @param {Array} levelRequirements List of objects with the requirements to level up the Rift
      */
-    updateLevelUpRiftModal(riftResource, levelRequirements) {
+    updateLevelUpRiftModal(riftResource, currLevel, levelRequirements) {
         // If the level up requirements are null, don't open the menu and disable the Rift's Level Up button
         if (levelRequirements === null) {
             // Hide the button
@@ -211,17 +226,79 @@ export class View {
 
         this.#riftDisplays[riftResource].querySelector("button[name='level-up-button']").removeAttribute("disabled");
 
-        // TODO: Update the Rift's image, etc
-
         // Update the modal with the appropriate information
-        this.#updateModalResourceRequirements(levelRequirements, this.#resourceCheckModalReqsList, ELEMENTS[RESOURCES[riftResource].ELEMENT].DISPLAY_NAME + " Rift", "Level Up");
+        this.#updateModalResourceRequirements(levelRequirements, this.#resourceCheckModalReqsList, ELEMENTS[RESOURCES[riftResource].ELEMENT].DISPLAY_NAME + " Rift - Level " + currLevel, "Level Up");
         
         // TODO: Display the modal? (NOTE: Currently being done by bootstrap, so try to move it here if it causes issues)
     }
 
-    closeLevelUpRiftModal() {
+    /**
+     * Updates the visual information on the crafting receipe using the information passed in
+     * @param {String} _resourceId The ID of the Resources obtained from the crafting
+     * @param {Number} _resourceCurrAmount How many of the Resource produced the Player currently has
+     * @param {Array} _craftReqs An array of objects for each of the crafting receipe's requirements
+     * @param {Boolean} _unlocked Whether the Resource produced by this receipe has been unlocked
+     * @param {Boolean} _storageFull Whether the player has run out of room for the Resource produced by this receipe
+     */
+    updateCraftingReceipe(_resourceId, _resourceCurrAmount, _craftReqs, _unlocked, _storageFull) {
+        // Obtain the Crafting receipe div for the specified Resource
+        let currCraftReceipeDiv = this.#craftingReceipesDivs[_resourceId];
+
+        // If this Resource doesn't have a div, then there's no receipe for it
+        if (!currCraftReceipeDiv) {
+            return;
+        }
+
+        // Update the name of the Resource that will be crafted
+        currCraftReceipeDiv.querySelector("h2[name='resource-name'").textContent = _unlocked ? RESOURCES[_resourceId].DISPLAY_NAME : "???";
+
+        // Update the current amount of the Resource being crafted
+        // TODO: Will have to give feedback here if the storage is full
+        currCraftReceipeDiv.querySelector("span[name='resource-amount-owned']").textContent = _unlocked ? _resourceCurrAmount : "-";
+
+        // Update the image of the Resource being crafted
+        currCraftReceipeDiv.querySelector("img").src = "images/" + (_unlocked ? RESOURCES[_resourceId].DISPLAY_NAME + " Icon.png" : "Unknown Resource Icon.png");
+        currCraftReceipeDiv.querySelector("img").alt = _unlocked ? RESOURCES[_resourceId].DISPLAY_NAME + " Icon" : "Unknown Resource Icon";
+
+        // Obtain the divs to display the crafting requirements
+        let craftReqDivs = currCraftReceipeDiv.querySelectorAll(".resource-requirement-div");
+        // Obtain the crafting button
+        let craftingButton = currCraftReceipeDiv.querySelector("button");
+
+        // Update the values of the requirements
+        this.#updateResourceRequirements(_craftReqs, craftReqDivs, _unlocked, craftingButton);
+
+        // If this resource's storage is full, disable the button. No need to enable it if it's not full, as that would override the state the button comes in from updateResourceRequirements
+        if (_storageFull) {
+            craftingButton.setAttribute("disabled", "");
+        }
+    }
+
+    closeLevelUpModal() {
         // Get the Bootstrap modal element and hide it
         bootstrap.Modal.getInstance(this.#resourceCheckModal).hide();
+    }
+
+    /**
+     * Updates the visuals of the passed in Resource, both in the display bar at the top, and its related Rift
+     * @param {String} _resourceId The ID of the Resource being unlocked
+     * @param {String} _resourceImage The name of the file for this Resource's Icon
+     * @param {String} _resourceImageAlt The alternative text for this Resource's Icon image
+     */
+    unlockResource(_resourceId, _resourceImage, _resourceImageAlt) {
+        // TODO: Play an animation and remove the lock from the Resource Icon
+        // TODO: Play an animation and unlock the Rift (Only applies to Tier 1 Resources)
+        // TODO: Change the name of the Rift and activate the button (Only applies to Tier 1 Resources)
+        if (RESOURCES[_resourceId].TIER === 1) {
+            // Update the resource display at the top
+            this.#tier1ResourceDisplays[_resourceId].querySelector("img[name='resource-display-icon']").src = "images/" + _resourceImage;
+            this.#tier1ResourceDisplays[_resourceId].querySelector("img[name='resource-display-icon']").alt = _resourceImageAlt;
+
+            // Unlock the rift information
+            this.#riftDisplays[_resourceId].querySelector("h2").textContent = RESOURCES[_resourceId].DISPLAY_NAME;
+            // Activate the button to level up the Rift
+            this.#riftDisplays[_resourceId].querySelector("button[name='level-up-button']").removeAttribute("disabled");
+        }
     }
 
     ////////////////////////////////////
@@ -241,48 +318,71 @@ export class View {
         // Update the button's text
         this.#resourceCheckModalSuccessButton.textContent = successButtonText;
 
-        // Whether the player has enough resources to level up the desired thing. True by default, will be set to false if any resource requirement isn't met
+        // Update the values of the requirements
+        this.#updateResourceRequirements(levelRequirements, reqsDisplayArray, true, this.#resourceCheckModalSuccessButton);
+    }
+
+    /**
+     * Helper function to display Resource requirements in a passed in list of divs
+     * @param {Array} requirements An array of objects with the requirements to display in the modal
+     * @param {Array} reqsDisplayArray An array holding the divs where the requirements are displayed
+     * @param {Boolean} showRequirements Whether the requirements should be shown as is, or hidden
+     * @param {DocumentElement} successButton The button corresponding to the action that should happen when all requirements are fulfilled, if applicable
+     */
+    #updateResourceRequirements(requirements, reqsDisplayArray, showRequirements = true, successButton = null) {
+        // Whether the player has enough resources for this upgrade. True by default, will be set to false if any resource requirement isn't met
         let reqsFulfilled = true;
-
         // Index to keep track of the current line so we can hide any unused ones
-        let index = 0;
-
+        let lastIndex = -1;
+        
         // Loop through all the requirements
-        levelRequirements.forEach(requiremet => {
+        requirements.forEach((req, index) => {
+            lastIndex = index;
             // Obtain the `index` line that displays the resource information
-            let currReqElement = reqsDisplayArray[index++];
-
+            let currReqDiv = reqsDisplayArray[index];
+            let resourceUnlocked = showRequirements && req.UNLOCKED;
+            
             // Update the resource's name
-            currReqElement.querySelector(".resource-name").textContent = RESOURCES[requiremet.RESOURCE].DISPLAY_NAME;
+            currReqDiv.querySelector(".resource-name").textContent = resourceUnlocked ? req.RESOURCE : "???";
+
             // Update the resource's current amount
-            currReqElement.querySelector(".resource-amount").textContent = requiremet.CURRENT_AMOUNT;
+            currReqDiv.querySelector(".resource-amount").textContent = resourceUnlocked ? req.CURRENT_AMOUNT : "???";
+            
+            // Update the Resource's image (This takes care of resources unlocking automatically, although it may happen more than necessary)
+            currReqDiv.querySelector("img").src = "images/" + (resourceUnlocked ? RESOURCES[req.RESOURCE].DISPLAY_NAME + " Icon.png" : "Unknown Resource Icon.png");
+            currReqDiv.querySelector("img").alt = resourceUnlocked ? RESOURCES[req.RESOURCE].DISPLAY_NAME + " Icon" : "Unknown Resource Icon";
+            
             // Update the resource's required amount
-            currReqElement.querySelector(".resource-amount-required").textContent = requiremet.AMOUNT;
+            currReqDiv.querySelector(".resource-amount-required").textContent = resourceUnlocked ? req.AMOUNT : "???";
 
             // Color the line red or green based on whether the requirement has been fulfilled
-            currReqElement.style.color = requiremet.FULFILLED === true ? "green" : "red";
+            currReqDiv.style.color = resourceUnlocked && req.FULFILLED === true ? "green" : "red";
 
             // Also add a checkmark or an X to the line using the same check
-            currReqElement.querySelector(".fulfilled-icon").textContent = requiremet.FULFILLED === true ? "✅" : "❌";
-            
+            currReqDiv.querySelector(".fulfilled-icon").textContent = resourceUnlocked && req.FULFILLED === true ? "✅" : "❌";
+
             // If the requirement for the current resource hasn't been fulfilled, we set reqsFulfilled to false. Otherwise we leave it as is.
             // NOTE: This converts reqsFulfilled to a number! (0 or 1)
-            reqsFulfilled &= requiremet.FULFILLED;
+            reqsFulfilled &= req.FULFILLED;
 
-            // Make the line visible again
-            currReqElement.style.display = "block";
+            // Need to make this visible again since the requirements in the Modal are hidden when not necessary
+            // NOTE: If the modal no longer uses block style, this will need to be updated
+            currReqDiv.style.display = "block";
         });
 
-        // Hide any resource lines leftover
-        while (index < MAX_NUM_ITEM_REQS) {
-            reqsDisplayArray[index++].style.display = "none";            
+        // Hide any resource lines leftover (Modal has a set number of lines)
+        while (++lastIndex < reqsDisplayArray.length) {
+            reqsDisplayArray[lastIndex].style.display = "none";            
         }
-
-        // Enable or disable the Level Up button based on whether all requirements were fulfilled
-        if (reqsFulfilled) {
-            this.#resourceCheckModalSuccessButton.removeAttribute("disabled");
-        } else {
-            this.#resourceCheckModalSuccessButton.setAttribute("disabled", "");
+        
+        // If there is a button tied to these requirements
+        if (successButton !== null) {
+            // Enable or disable it based on whether all requirements were fulfilled
+            if (showRequirements && reqsFulfilled) {
+                successButton.removeAttribute("disabled");
+            } else {
+                successButton.setAttribute("disabled", "");
+            }
         }
     }
 }

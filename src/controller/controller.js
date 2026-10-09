@@ -1,4 +1,4 @@
-import { MENUS, RESOURCES, MAX_NUM_ITEM_REQS } from "../model/data/constants.js";
+import { MENUS, RESOURCES, MAX_NUM_ITEM_REQS, CRAFTS } from "../model/data/constants.js";
 import { PlayerManager } from "../model/managers/player_manager.js";
 import { View } from "../view/view.js";
 import { RiftsManager } from "../model/managers/rifts_manager.js";
@@ -22,6 +22,7 @@ export class Controller {
     #resourceStorageTemplate;
     #resourceDisplayTemplate;
     #resourceGenerationTemplate;
+    #resourceCraftTemplate;
     //#endregion
 
     // Data Variables
@@ -48,20 +49,27 @@ export class Controller {
         // Grab the divs where the resources' display and generation lie
         this.#resourceGenerationTemplate = document.getElementById("resource-generation-template");
 
+        this.#resourceCraftTemplate = document.getElementById("resource-craft-template");
+
         this.#initializeResourceCheckModal();
         this.#initializePlayerMenu();
         this.#initializeRiftsMenu();
+        this.#initializeCraftingMenu();
 
         // Create the View
         this.#view = new View();
 
-        // Update each Tier 1 Resources' displayed information
+        this.#updateCraftingMenu();
+
+        // Loop through every resource
         Array.from(Object.values(RESOURCES)).forEach(resource => {
+            // If it's a Tier 1, update it's corresponding display
+            // TODO: Will also have to update every other Resource's display if that's added
             if (resource.TIER == 1) {
                 let amount = this.#playerManager.getResourceAmount(resource.ID);
-                let capacity = this.#playerManager.getResourceCapacity(resource.ID)
-                this.#view.initializeResource(resource.ID, capacity > 0, amount, capacity === amount);
-                this.#view.updateRiftDisplay(resource.ID, 1, this.#riftsManager.getImageName(resource.ID), this.#riftsManager.getImageAlt(resource.ID), capacity > 0);
+                let unlocked = this.#playerManager.isResourceUnlocked(resource.ID)
+                this.#view.initializeResource(resource.ID, unlocked, amount, this.#playerManager.isResourceFull(resource.ID));
+                this.#view.updateRiftDisplay(resource.ID, 1, this.#riftsManager.getImageName(resource.ID), this.#riftsManager.getImageAlt(resource.ID), this.#riftsManager.isRiftMaxLevel(resource.ID), unlocked);
             }
         });
 
@@ -87,6 +95,11 @@ export class Controller {
         // Update the current menu
         this.#currentMenu = newMenu;
 
+        // Handle all menu updates before "loading" a menu
+        if (this.#currentMenu === MENUS.CRAFT) {
+            this.#updateCraftingMenu();
+        }
+
         // Open the new menu
         this.#view.openMainMenu(this.#currentMenu);
     }
@@ -106,10 +119,8 @@ export class Controller {
     generateTier1Resource = event => {
         let resource = RESOURCES[event.currentTarget.resourceClicked];
 
-        let resourceCapacity = this.#playerManager.getResourceCapacity(resource.ID);
-
         // If the resource hasn't been unlocked yet OR it's currently at max capacity
-        if (resourceCapacity <= 0 || resourceCapacity <= this.#playerManager.getResourceAmount(resource.ID)) {
+        if (!this.#playerManager.isResourceUnlocked(resource.ID) || this.#playerManager.isResourceFull(resource.ID)) {
             // Don't increase it
             return;
         }
@@ -120,13 +131,12 @@ export class Controller {
         // TODO: If the resource is at max capacity, will need to show the player some sort of feedback to let them know they can't gain any more until its storage is increased or it's spent somewhere
 
         // Update the resource's display amount
-        let amount = this.#playerManager.getResourceAmount(resource.ID);
-        this.#view.updateResourceDisplay(resource.ID, amount, this.#playerManager.getResourceCapacity(resource.ID) === amount);
+        this.#view.updateResourceDisplay(resource.ID, this.#playerManager.getResourceAmount(resource.ID), this.#playerManager.isResourceFull(resource.ID));
     }
 
     /**
      * Saves the Rift selected and updates the modal
-     * @param {*} event document Event to obtain the Rift's Resource
+     * @param {Event} event document Event to obtain the Rift's Resource
      */
     openRiftLevelUpModal = event => {
         // We save the Resource of the selected Rift so we can level it up later
@@ -136,13 +146,68 @@ export class Controller {
     }
 
     /**
+     * Checks that all requirements are fulfilled, crafts the Resource, and updates the Crafting Menu afterwards
+     * @param {Event} event document Event to obtain the crafting receipe's Resource
+     * @returns 
+     */
+    handleCraftResource = event => {
+        let resourceCrafted = event.currentTarget.resourceClicked;
+        
+        // This Resource hasn't been unlocked yet, so it can't be crafted
+        if (!this.#playerManager.isResourceUnlocked(resourceCrafted)) {
+            return;
+        }
+
+        let reqsFulfilled = true;
+        let craftingReqs = CRAFTS[resourceCrafted];
+        
+        // This isn't a craftable Resource
+        if (!craftingReqs) {
+            return;
+        }
+        
+        // Make sure the Player has the resources necessary for this craft
+        craftingReqs.forEach(req => {
+            reqsFulfilled &= this.#playerManager.getResourceAmount(req.RESOURCE) >= req.AMOUNT;
+        });
+
+        // The Player is lacking 1 or more resources, don't craft the item
+        if (!reqsFulfilled) {
+            return;
+        }
+
+        // If the Player has reached max capacity for the resource they're trying to craft, don't craft it
+        if (this.#playerManager.isResourceFull(resourceCrafted)) {
+            return;
+        }
+
+        // TODO: Play sound effect, show animation, etc. here
+
+        // Remove the Resources spent on this craft from the Player's Storage
+        craftingReqs.forEach(req => {
+            this.#playerManager.removeResourceAmount(req.RESOURCE, req.AMOUNT);
+
+            // If this was a Tier 1 Resource
+            // NOTE: If a display is added to other Resources in the future, this line will have to be changed
+            if (RESOURCES[req.RESOURCE].TIER === 1) {
+                // Refresh the Resource display so it shows the updated value
+                this.#view.updateResourceDisplay(req.RESOURCE, this.#playerManager.getResourceAmount(req.RESOURCE), false);
+            }
+        });
+
+        // Add the Resource crafted to the Player's Storage
+        // NOTE: For now each craft will only give 1 of the crafted item. Needs to be revisited if the player will be able to craft more than 1 at a time
+        this.#playerManager.increaseResourceAmount(resourceCrafted, 1);
+
+        // Refresh the Crafting Menu so the values update accordingly
+        this.#updateCraftingMenu();
+    }
+
+    /**
      * Calls the appropriate function for the current menu
      */
     handleModalSuccessButton = () => {
         switch (this.#currentMenu) {
-            case MENUS.CRAFT:
-                // TODO: Craft TBA
-                break;
             case MENUS.PLAYER:
                 this.#levelUpPlayer();
                 break;
@@ -235,6 +300,58 @@ export class Controller {
         });
     }
 
+    #initializeCraftingMenu = () => {
+        // Grab the div where the Craft receipes will be added
+        let craftingListDiv = document.getElementById("crafting-list-div");
+        
+        // Loop through every Resource
+        Array.from(Object.values(RESOURCES)).forEach(resource => {
+            // Grab the entry for the current Resource in the CRAFTS data
+            let currResourceCraft = CRAFTS[resource.ID];
+
+            // If the current Resource has a crafting receipe
+            if (currResourceCraft) {
+                // Clone the Craft receipe template
+                let currCraftDiv = this.#resourceCraftTemplate.content.cloneNode(true);
+                
+                // Set the Resource associated with said receipe
+                currCraftDiv.querySelector(".resource-craft-div").dataset.resource = resource.ID;
+
+                // Grab the receipe's div that will hold the list of requirements
+                let craftRequirementsDiv = currCraftDiv.querySelector(".craft-requirements-div");
+                // Loop through all the requirements on the current receipe
+                currResourceCraft.forEach(_ => {
+                    // Create a new Resource requirement line from the template
+                    let currReqDiv = this.#resourceRequirementTemplate.content.cloneNode(true);
+                    // Add the line to the div holding the list of requirements
+                    craftRequirementsDiv.appendChild(currReqDiv);
+                });
+
+                // Add the new receipe to the list of Craft receipes
+                craftingListDiv.appendChild(currCraftDiv);
+            }
+        });
+    }
+
+    #updateCraftingMenu = () => {
+        // Loop through every resource
+        Array.from(Object.values(RESOURCES)).forEach(resource => {
+            let craftReq = CRAFTS[resource.ID];
+            // If the Resource has a Crafting receipe
+            if (craftReq) {
+                // Add the Current Amount, Fulfilled and Unlocked properties to every requirement for easier handling in the View
+                craftReq.forEach(req => {
+                    req.CURRENT_AMOUNT = this.#playerManager.getResourceAmount(req.RESOURCE);
+                    req.FULFILLED = req.AMOUNT <= req.CURRENT_AMOUNT;
+                    req.UNLOCKED = this.#playerManager.isResourceUnlocked(req.RESOURCE);
+                });
+
+                // Update the view of the receipe
+                this.#view.updateCraftingReceipe(resource.ID, this.#playerManager.getResourceAmount(resource.ID), craftReq, this.#playerManager.isResourceUnlocked(resource.ID), this.#playerManager.isResourceFull(resource.ID));
+            }
+        });
+    }
+
     /**
      * Updates the modal to display the requirements to level up the selected Rift
      */
@@ -244,7 +361,7 @@ export class Controller {
         // There either was an error, or the Rift is max Level
         if (nextLevelRequirements === null) {
             // Close the modal if it's open
-            this.#view.closeLevelUpRiftModal();
+            this.#view.closeLevelUpModal();
             // Ignore the rest of the code
             return;
         }
@@ -256,10 +373,11 @@ export class Controller {
             requirement.CURRENT_AMOUNT = currAmount;
             // Also save whether the requirement for this resource is fulfilled
             requirement.FULFILLED = currAmount >= requirement.AMOUNT;
+            requirement.UNLOCKED = this.#playerManager.isResourceUnlocked(requirement.RESOURCE);
         });
 
         // Update the level up modal passing in the Element of the currently selected Rift, its level up requirements, and the amount of each resource the player currently has
-        this.#view.updateLevelUpRiftModal(this.#currentRiftSelected, nextLevelRequirements);
+        this.#view.updateLevelUpRiftModal(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected), nextLevelRequirements);
     }
 
     /**
@@ -286,7 +404,27 @@ export class Controller {
 
         // All requirements were fulfilled, level up the player
         if (requirementFulfilled) {
+            // The main Resource the Energy Rift produces
+            let energyRiftResource = RESOURCES.BYTE_ENERGY.ID;
+            // Store whether the Energy Rift was already unlocked
+            let wasEnergyRiftUnlocked = this.#playerManager.isResourceUnlocked(energyRiftResource);
+
             this.#playerManager.levelUp();
+
+            // If the Energy Rift is now unlocked
+            if (!wasEnergyRiftUnlocked && this.#playerManager.isResourceUnlocked(energyRiftResource)) {
+                // Update the Byte Energy's display
+                this.#view.updateResourceDisplay(energyRiftResource, 0, false);
+
+                // TODO: Play an animation that unlocks the Byte Energy display at the top of the screen
+
+                // Update the Energy Rift values
+                this.#view.updateRiftDisplay(energyRiftResource, 1, this.#riftsManager.getImageName(energyRiftResource), this.#riftsManager.getImageAlt(energyRiftResource), this.#riftsManager.isRiftMaxLevel(energyRiftResource));
+
+                // Tell the view to update the visuals accordingly
+                // TODO: This would need to be done in a way that the animation plays the next time the player goes to the Rifts menu, because at the moment they're in a different menu to really see it
+                this.#view.unlockResource(energyRiftResource, RESOURCES[energyRiftResource].DISPLAY_NAME + " Icon.png", RESOURCES[energyRiftResource].DISPLAY_NAME + " Icon");
+            }
 
             // Remove the appropiate resources from the Player's storage
             Array.from(requirements).forEach(req => {
@@ -295,9 +433,8 @@ export class Controller {
                 // If the Resource modified was a Tier 1 resource
                 // TODO: Might have to come back and revise this if a display for a tier 2+ resource is added
                 if (RESOURCES[req.RESOURCE].TIER === 1) {
-                    let amount = this.#playerManager.getResourceAmount(req.RESOURCE);
                     // Update its display on the main page
-                    this.#view.updateResourceDisplay(req.RESOURCE, amount, this.#playerManager.getResourceCapacity(req.RESOURCE) === amount);
+                    this.#view.updateResourceDisplay(req.RESOURCE, this.#playerManager.getResourceAmount(req.RESOURCE), this.#playerManager.isResourceFull(req.RESOURCE));
                 }
             });
         }
@@ -319,7 +456,7 @@ export class Controller {
         // Either there was an error, or the Rift is max Level
         if (nextLevelRequirements === undefined) {
             // Close the modal
-            this.#view.closeLevelUpRiftModal();
+            this.#view.closeLevelUpModal();
             // Ignore the rest of the code
             return;
         }
@@ -336,7 +473,7 @@ export class Controller {
         // The player doesn't have enough resources to level up the Rift
         if (!requirementFulfilled) {
             // Close the modal
-            this.#view.closeLevelUpRiftModal();
+            this.#view.closeLevelUpModal();
             // Don't level up the Rift (since the data was tampered with)
             return;
         }
@@ -347,9 +484,8 @@ export class Controller {
 
             // If the resource was Tier 1
             if (RESOURCES[requirement.RESOURCE].TIER === 1) {
-                let amount = this.#playerManager.getResourceAmount(requirement.RESOURCE);
                 // Update the display
-                this.#view.updateResourceDisplay(requirement.RESOURCE, amount, this.#playerManager.getResourceCapacity(requirement.RESOURCE) === amount);
+                this.#view.updateResourceDisplay(requirement.RESOURCE, this.#playerManager.getResourceAmount(requirement.RESOURCE), this.#playerManager.isResourceFull(requirement.RESOURCE));
             }
         });
 
@@ -360,6 +496,6 @@ export class Controller {
 
         this.#updateLevelUpRiftModal();
 
-        this.#view.updateRiftDisplay(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected), this.#riftsManager.getImageName(this.#currentRiftSelected), this.#riftsManager.getImageAlt(this.#currentRiftSelected));
+        this.#view.updateRiftDisplay(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected), this.#riftsManager.getImageName(this.#currentRiftSelected), this.#riftsManager.getImageAlt(this.#currentRiftSelected), this.#riftsManager.isRiftMaxLevel(this.#currentRiftSelected));
     }
 }

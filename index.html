@@ -48,6 +48,16 @@
       </div>
     </div>
   </template>
+  <template id="resource-craft-template">
+    <div class="col-2 col-lg-3 col-md-4 col-sm-6 col-12 p-1 resource-craft-div" data-resource="">
+      <h2 name="resource-name">RESOURCE NAME</h2>
+      <img src="images/" alt="Image here">
+      <p>Owned: <span name="resource-amount-owned">X</span></p>
+      <div class="craft-requirements-div">
+      </div>
+      <button type="button" name="craft-button">Craft</button>
+    </div>
+  </template>
   <template id="resource-requirement-template">
     <p class="resource-requirement-div"><img src="images/" alt="">
       <span class="fulfilled-icon">X</span> <span class="resource-name">RESOURCE NAME</span>:
@@ -60,7 +70,7 @@
     <nav>
       <button id="rifts-menu-button">Rifts</button>
       <button id="player-menu-button">Player</button>
-      <button disabled>Craft</button>
+      <button id="craft-menu-button">Craft</button>
     </nav>
   </header>
   <main>
@@ -70,13 +80,18 @@
     </div>
     <div id="player-menu">
       <div id="player-level-info">
-        <h2>Level <span class="player-level">1</span></h2>
+        <h1>Level <span class="player-level">1</span></h1>
         <div id="player-level-up-info">
           <button type="button" name="level-up-button" data-bs-toggle="modal" data-bs-target="#resources-check-modal">Level Up</button>
         </div>
       </div>
       <div id="storage">
         <h3>Resources Capacity</h3>
+      </div>
+    </div>
+    <div id="craft-menu">
+      <h1>Crafting Desk</h1>
+      <div id="crafting-list-div" class="row justify-content-center text-center">
       </div>
     </div>
     <!-- Modal used to check if the player has enough resources to level up, craft, etc -->

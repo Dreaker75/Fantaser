@@ -70,6 +70,22 @@ export class RiftsManager {
         return this.rifts[_resourceId].getImageAlt();
     }
 
+    /**********************************************
+     * PUBLIC FUNCTIONS
+     *********************************************/
+    /**
+     * Check whether the Rift is currently at max level
+     * @param {String} _resourceId The ID of the Rift's Resource
+     * @returns true if the Rift exists and it's currently at max level, false otherwise
+     */
+    isRiftMaxLevel = (_resourceId) => {
+        if (undefined === this.rifts[_resourceId]) {
+            return false;
+        }
+        
+        return this.rifts[_resourceId].getLevel() >= GENERATION[_resourceId].length;
+    }
+
     /**
      * Levels up the Rift of the specified Resource, if it exists
      * @param {string} _resourceId ID of the Rift's Resource

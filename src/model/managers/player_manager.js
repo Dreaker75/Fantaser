@@ -32,6 +32,8 @@ export class PlayerManager {
     ////////////////////////////////////////////////
     increaseResourceAmount(_resourceId, amount) { return this.#resources[_resourceId].increaseAmount(amount); }
     removeResourceAmount(_resourceId, amount) { this.#resources[_resourceId].decreaseAmount(amount); }
+    isResourceFull(_resourceId) { return this.getResourceAmount(_resourceId) >= this.getResourceCapacity(_resourceId); }
+    isResourceUnlocked(_resourceId) { return this.getResourceCapacity(_resourceId) > 0; }
 
     /**
      * Obtain the requirements to level up the player
@@ -57,6 +59,7 @@ export class PlayerManager {
             req.CURRENT_AMOUNT = this.getResourceAmount(req.RESOURCE);
             // Add whether the requirement is satisfied for this resource
             req.FULFILLED = req.CURRENT_AMOUNT >= req.AMOUNT;
+            req.UNLOCKED = this.isResourceUnlocked(req.RESOURCE);
         });
 
         return reqsInfo;
