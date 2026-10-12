@@ -12,6 +12,10 @@ button {
     background-color: lightgreen;
 }
 
+.float-right {
+    text-align: right;
+}
+
 .resource-generation {
     background-color: darkgray;
     border: 1px solid black;
@@ -27,7 +31,6 @@ button {
     align-items: center;
     position: relative;
     padding: 0% 1%;
-    /* width: 10%; */
 }
 
 .resource-icon {
@@ -78,4 +81,8 @@ button {
 
 .craft-requirements {
     border: 1px black solid;
+}
+
+#information-modal p.modal-main-text {
+    font-size: large;
 }

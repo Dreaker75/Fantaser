@@ -33,4 +33,14 @@ export class SaveManager {
     saveResourceAmount = (_resourceId, amount) => {
         localStorage.setItem(_resourceId, amount);
     }
+
+    ////////////////////////////////////////////////
+    // PUBLIC FUNCTIONS
+    ////////////////////////////////////////////////
+    /**
+     * Clears all the contents from localStorage
+     */
+    deleteSave = () => {
+        localStorage.clear();
+    }
 }

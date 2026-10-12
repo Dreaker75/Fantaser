@@ -8,6 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Create the controller
     let controller = new Controller();
 
+    // Save-related buttons
+    document.getElementById("delete-save-button").addEventListener("click", controller.handleDeleteSaveButton);
+
+    document.getElementById("modal-confirmation-button").addEventListener("click", controller.handleConfirmationButton);
+
+    document.getElementById("modal-cancel-button").addEventListener("click", controller.handleCancelButton);
+
     // Main menu buttons
     document.getElementById("rifts-menu-button").addEventListener("click", () => {
         controller.openNewMenu(MENUS.RIFTS);

@@ -31,8 +31,12 @@ export class Controller {
     #currentMenu;
     // NOTE: This is not properly protected, as it doesn't check that the Rift currently opened lines up with this variable, if it's modified manually by the player
     #currentRiftSelected;
+    // Boolean to know if the player is trying to delete their progress
+    #isDeleteSaveModalOpen;
 
     constructor() {
+        this.#isDeleteSaveModalOpen = false;
+
         this.#saveManager = new SaveManager();
         this.#playerManager = new PlayerManager(this.#saveManager.getSavedPlayerLevel());
         this.#riftsManager = new RiftsManager();
@@ -250,6 +254,43 @@ export class Controller {
             default:
                 break;
         }
+    }
+
+    /**
+     * Updates all the necessary values when opening the Delete Save modal
+     * NOTE: Since this is done at the same time as opening the modal, if the computer is slow, then it's possible it shows the default values before they're updated
+     */
+    handleDeleteSaveButton = () => {
+        this.#isDeleteSaveModalOpen = true;
+
+        this.#view.updateInformationModal(
+            "Delete Progress",
+            "Are you sure you want to delete your progress up to this point? This cannot be undone!",
+            "DELETE", "Cancel", true
+        );
+    }
+
+    /**
+     * Handles the corresponding behavior based on the message being shown to the player
+     */
+    handleConfirmationButton = () => {
+        if (this.#isDeleteSaveModalOpen) {
+            // Delete the player's save
+            this.#saveManager.deleteSave();
+
+            // Close the modal
+            this.#closeInformationModal();
+            
+            // Update all the values (Easiest way to do this is with a page refresh)
+            window.location.reload();
+        }
+    }
+
+    /**
+     * Calls the necessary functions for the modal to close correctly
+     */
+    handleCancelButton = () => {
+        this.#closeInformationModal();
     }
 
     ////////////////////////////////////
@@ -546,5 +587,14 @@ export class Controller {
         this.#updateLevelUpRiftModal();
 
         this.#view.updateRiftDisplay(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected), this.#riftsManager.getImageName(this.#currentRiftSelected), this.#riftsManager.getImageAlt(this.#currentRiftSelected), this.#riftsManager.isRiftMaxLevel(this.#currentRiftSelected));
+    }
+
+    #closeInformationModal = () => {
+        if (this.#isDeleteSaveModalOpen) {
+            // Player is no longer trying to delete their progress
+            this.#isDeleteSaveModalOpen = false;
+        }
+
+        this.#view.closeInformationModal();
     }
 }
