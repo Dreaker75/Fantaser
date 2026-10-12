@@ -825,3 +825,23 @@ CRAFTS[RESOURCES.DATA_BOOST.ID] = [
 ];
 //#endregion
 //////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////
+//#region LocalStorage Keys
+export const RIFTS_SAVE_KEYS = {};
+RIFTS_SAVE_KEYS[RESOURCES.CLEAR_SHARD.ID] = "clearRift";
+RIFTS_SAVE_KEYS[RESOURCES.FIRE_ESSENCE.ID] = "fireRift";
+RIFTS_SAVE_KEYS[RESOURCES.WATER_ESSENCE.ID] = "waterRift";
+RIFTS_SAVE_KEYS[RESOURCES.EARTH_ESSENCE.ID] = "earthRift";
+RIFTS_SAVE_KEYS[RESOURCES.WIND_ESSENCE.ID] = "windRift";
+RIFTS_SAVE_KEYS[RESOURCES.THUNDER_ESSENCE.ID] = "thunderRift";
+RIFTS_SAVE_KEYS[RESOURCES.LIGHT_ESSENCE.ID] = "lightRift";
+RIFTS_SAVE_KEYS[RESOURCES.DARK_ESSENCE.ID] = "darkRift";
+RIFTS_SAVE_KEYS[RESOURCES.BYTE_ENERGY.ID] = "energyRift";
+
+export const SAVE_KEYS = {
+    PLAYER_LEVEL: "playerLevel",
+    RIFTS: RIFTS_SAVE_KEYS,
+};
+//#endregion
+//////////////////////////////////////////////////////

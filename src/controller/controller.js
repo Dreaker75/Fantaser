@@ -2,6 +2,7 @@ import { MENUS, RESOURCES, MAX_NUM_ITEM_REQS, CRAFTS } from "../model/data/const
 import { PlayerManager } from "../model/managers/player_manager.js";
 import { View } from "../view/view.js";
 import { RiftsManager } from "../model/managers/rifts_manager.js";
+import { SaveManager } from "../model/managers/save_manajer.js";
 
 export class Controller {
     #view;
@@ -9,6 +10,7 @@ export class Controller {
     //#region Managers
     #playerManager;
     #riftsManager;
+    #saveManager;
     //#endregion
 
     //#region Generic elements
@@ -31,8 +33,25 @@ export class Controller {
     #currentRiftSelected;
 
     constructor() {
-        this.#playerManager = new PlayerManager();
+        this.#saveManager = new SaveManager();
+        this.#playerManager = new PlayerManager(this.#saveManager.getSavedPlayerLevel());
         this.#riftsManager = new RiftsManager();
+
+        // Loop each Resource to update Rift Levels and Resource amounts with their saved values, if they exist
+        Array.from(Object.values(RESOURCES)).forEach(resource => {
+            let level = this.#saveManager.getSavedRiftLevel(resource.ID);
+
+            // If the level obtained was different than 0 (0 is for locked rifts or Resources not tied to one)
+            if (level) {
+                this.#riftsManager.updateRiftLevel(resource.ID, level);
+            }
+
+            let amount = this.#saveManager.getSavedResourceAmount(resource.ID);
+            // If the amount for this Resource is 0, there's no need to update it
+            if (amount) {
+                this.#playerManager.setResourceAmount(resource.ID, amount);
+            }
+        });
 
         this.#resourcesCheckModal = document.getElementById("resources-check-modal");
 
@@ -64,12 +83,12 @@ export class Controller {
         // Loop through every resource
         Array.from(Object.values(RESOURCES)).forEach(resource => {
             // If it's a Tier 1, update it's corresponding display
-            // TODO: Will also have to update every other Resource's display if that's added
+            // TODO: Will also have to update every other Resource's display if a display is added to Tier 2 and higher Resources
             if (resource.TIER == 1) {
                 let amount = this.#playerManager.getResourceAmount(resource.ID);
                 let unlocked = this.#playerManager.isResourceUnlocked(resource.ID)
                 this.#view.initializeResource(resource.ID, unlocked, amount, this.#playerManager.isResourceFull(resource.ID));
-                this.#view.updateRiftDisplay(resource.ID, 1, this.#riftsManager.getImageName(resource.ID), this.#riftsManager.getImageAlt(resource.ID), this.#riftsManager.isRiftMaxLevel(resource.ID), unlocked);
+                this.#view.updateRiftDisplay(resource.ID, this.#riftsManager.getRiftLevel(resource.ID), this.#riftsManager.getImageName(resource.ID), this.#riftsManager.getImageAlt(resource.ID), this.#riftsManager.isRiftMaxLevel(resource.ID), unlocked);
             }
         });
 
@@ -130,8 +149,14 @@ export class Controller {
 
         // TODO: If the resource is at max capacity, will need to show the player some sort of feedback to let them know they can't gain any more until its storage is increased or it's spent somewhere
 
+        let amount = this.#playerManager.getResourceAmount(resource.ID);
+        
         // Update the resource's display amount
-        this.#view.updateResourceDisplay(resource.ID, this.#playerManager.getResourceAmount(resource.ID), this.#playerManager.isResourceFull(resource.ID));
+        this.#view.updateResourceDisplay(resource.ID, amount, this.#playerManager.isResourceFull(resource.ID));
+
+        // Update the saved data with the new resource amount
+        // NOTE: Will have to make sure this (and all other instances) isn't too extreme, could save the information every 1 second or so.
+        this.#saveManager.saveResourceAmount(resource.ID, amount);
     }
 
     /**
@@ -187,12 +212,17 @@ export class Controller {
         craftingReqs.forEach(req => {
             this.#playerManager.removeResourceAmount(req.RESOURCE, req.AMOUNT);
 
+            let newAmount = this.#playerManager.getResourceAmount(req.RESOURCE);
+
             // If this was a Tier 1 Resource
             // NOTE: If a display is added to other Resources in the future, this line will have to be changed
             if (RESOURCES[req.RESOURCE].TIER === 1) {
                 // Refresh the Resource display so it shows the updated value
-                this.#view.updateResourceDisplay(req.RESOURCE, this.#playerManager.getResourceAmount(req.RESOURCE), false);
+                this.#view.updateResourceDisplay(req.RESOURCE, newAmount, false);
             }
+
+            // Update the saved data with the new resource amount
+            this.#saveManager.saveResourceAmount(req.RESOURCE, newAmount);
         });
 
         // Add the Resource crafted to the Player's Storage
@@ -201,6 +231,9 @@ export class Controller {
 
         // Refresh the Crafting Menu so the values update accordingly
         this.#updateCraftingMenu();
+
+        // Update the saved data with the new resource amount
+        this.#saveManager.saveResourceAmount(resourceCrafted, this.#playerManager.getResourceAmount(resourceCrafted));
     }
 
     /**
@@ -411,6 +444,9 @@ export class Controller {
 
             this.#playerManager.levelUp();
 
+            // Save the new Player's level
+            this.#saveManager.savePlayerLevel(this.#playerManager.getLevel());
+
             // If the Energy Rift is now unlocked
             if (!wasEnergyRiftUnlocked && this.#playerManager.isResourceUnlocked(energyRiftResource)) {
                 // Update the Byte Energy's display
@@ -430,12 +466,17 @@ export class Controller {
             Array.from(requirements).forEach(req => {
                 this.#playerManager.removeResourceAmount(req.RESOURCE, req.AMOUNT);
 
+                let newAmount = this.#playerManager.getResourceAmount(req.RESOURCE);
+
                 // If the Resource modified was a Tier 1 resource
                 // TODO: Might have to come back and revise this if a display for a tier 2+ resource is added
                 if (RESOURCES[req.RESOURCE].TIER === 1) {
                     // Update its display on the main page
-                    this.#view.updateResourceDisplay(req.RESOURCE, this.#playerManager.getResourceAmount(req.RESOURCE), this.#playerManager.isResourceFull(req.RESOURCE));
+                    this.#view.updateResourceDisplay(req.RESOURCE, newAmount, this.#playerManager.isResourceFull(req.RESOURCE));
                 }
+                
+                // Update the saved data with the new resource amount
+                this.#saveManager.saveResourceAmount(req.RESOURCE, newAmount);
             });
         }
 
@@ -482,17 +523,25 @@ export class Controller {
         nextLevelRequirements.forEach(requirement => {
             this.#playerManager.removeResourceAmount(requirement.RESOURCE, requirement.AMOUNT);
 
+            let newAmount = this.#playerManager.getResourceAmount(requirement.RESOURCE);
+
             // If the resource was Tier 1
             if (RESOURCES[requirement.RESOURCE].TIER === 1) {
                 // Update the display
-                this.#view.updateResourceDisplay(requirement.RESOURCE, this.#playerManager.getResourceAmount(requirement.RESOURCE), this.#playerManager.isResourceFull(requirement.RESOURCE));
+                this.#view.updateResourceDisplay(requirement.RESOURCE, newAmount, this.#playerManager.isResourceFull(requirement.RESOURCE));
             }
+
+            // Update the saved data with the new resource amount
+            this.#saveManager.saveResourceAmount(requirement.RESOURCE, newAmount);
         });
 
         // TODO: Double check #currentRiftSelected lines up with the Rift currently opened?
 
         // Tell the RiftsManager to increase the selected Rift's Level
         this.#riftsManager.levelUpRift(this.#currentRiftSelected);
+
+        // Save the new Rift level
+        this.#saveManager.saveRiftLevel(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected));
 
         this.#updateLevelUpRiftModal();
 

@@ -5,7 +5,15 @@ export class PlayerManager {
     #level = 1;
     #resources = {};
 
-    constructor() {
+    /**
+     * @param {Number | null} _playerLevel The saved player level, or null if no previous data exists
+     */
+    constructor(_playerLevel) {
+        // If a valid player level was received, set it as the Player's Level. Otherwise leave it as the default of 1
+        if (_playerLevel && _playerLevel > 1 && _playerLevel < MAX_PLAYER_LEVEL) {
+            this.#level = _playerLevel;
+        }
+
         Array.from(Object.values(RESOURCES)).forEach(resource => {
             // TODO: Take into account storage buffs after save file is implemented
             this.#resources[resource.ID] = new Resource(resource.ID, CAPACITY[resource.ID][this.#level - 1]);
@@ -25,6 +33,17 @@ export class PlayerManager {
         });
 
         return capacities;
+    }
+
+    ////////////////////////////////////////////////
+    // MUTATORS
+    ////////////////////////////////////////////////
+    setResourceAmount = (resourceId, amount) => {
+        if (!amount && amount < 0) {
+            return;
+        }
+
+        this.#resources[resourceId].setAmount(amount);
     }
 
     ////////////////////////////////////////////////
