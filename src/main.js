@@ -15,6 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("modal-cancel-button").addEventListener("click", controller.handleCancelButton);
 
+    document.getElementById("export-save-button").addEventListener("click", controller.handleExportSave);
+    document.getElementById("import-save-button").addEventListener("click", controller.handleImportSave);
+    document.getElementById("file-upload-input").addEventListener("change", controller.handleImportSaveThroughInput);
+
     // Main menu buttons
     document.getElementById("rifts-menu-button").addEventListener("click", () => {
         controller.openNewMenu(MENUS.RIFTS);

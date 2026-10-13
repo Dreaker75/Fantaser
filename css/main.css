@@ -86,3 +86,8 @@ button {
 #information-modal p.modal-main-text {
     font-size: large;
 }
+
+/* Don't show the file upload input to the user, it looks better when using the Import button */
+#file-upload-input {
+    display: none;
+}

@@ -293,6 +293,122 @@ export class Controller {
         this.#closeInformationModal();
     }
 
+    /**
+     * Exports the save file as a JSON object in a text file
+     * NOTE: Could look into exporting it as a binary file instead?
+     */
+    handleExportSave = () => {
+        // Obtain the player data
+        let saveData = this.#saveManager.exportSave();
+
+        // Create object that can be saved to a file using the save data in JSON format
+        let fileObject = new Blob([JSON.stringify(saveData, null, 2)], {
+            type: "application/json",
+        });
+
+        // Check whether this browser supports opening a save file window
+        if ("showSaveFilePicker" in window) {
+            window.showSaveFilePicker()
+            .then(newHandle => {
+                return newHandle.createWritable();
+            })
+            .then(writableStream => {
+                // Write the player data to the file specified by the user
+                return writableStream.write(fileObject)
+                .then(() => writableStream.close());
+            })
+            .catch(error => {
+                if (error.name !== "AbortError") {
+                    console.log("Error: " + error);
+                }
+            });
+        // If the browser doesn't support the save file window (ie. FireFox), we use the workaround
+        // NOTE: The following code will create a new file every time. If a file with the same name already exists, it will create a second one with a number at the end. Ex. "FantaserSave (1).txt"
+        } else {
+            // Create a temporary link element
+            let element = document.createElement("a");
+            // Set the name of the file
+            element.setAttribute("download", "FantaserSave.txt")
+            // When the link is pressed, it will save a new file using the file object created earlier
+            element.setAttribute("href", URL.createObjectURL(fileObject));
+            // Forceibly click the link so it executes the code above
+            element.click();
+            // Get rid of the temporary element
+            // NOTE: Not sure if this line actually does anything. Check later.
+            element.remove();
+        }
+    }
+
+    /**
+     * Imports and loads the save if the browser supports "showOpenFilePicker". Otherwise, it triggers the file input for the user to choose a file
+     */
+    handleImportSave = () => {
+        // Check whether this browser supports opening an open file window
+        if ("showOpenFilePicker" in window) {
+            let filePickerOptions = {
+            types: [
+                    {
+                        description: "Text",
+                        accept: {
+                            "text/plain": [".txt"],
+                        },
+                    },
+                ],
+                excludeAcceptAllOption: true,
+                multiple: false,
+            };
+
+            window.showOpenFilePicker(filePickerOptions)
+            .then(fileHandle => {
+                // Grab the first file (even with the option "multiple" set to false, the file still comes inside an array)
+                return fileHandle[0].getFile();
+            })
+            .then(fileObject => {
+                // Extract the file's data
+                return fileObject.text();
+            })
+            .then(fileData => {
+                try {
+                    this.#loadSave(fileData);
+                } catch (error) {
+                    // TODO: Show feedback to the user that the file wasn't correct
+                    console.log("Error: This file was not a valid JSON.");
+                }
+            })
+            .catch(error => {
+                if (error.name !== "AbortError") {
+                    console.log("Error: " + error);
+                }
+            })
+        // The browser doesn't support showOpenFilePicker, trigger the file input
+        } else {
+            let fileUploadInput = document.getElementById("file-upload-input")
+            
+            if (fileUploadInput) {
+                fileUploadInput.click();
+            }
+        }
+    }
+
+    /**
+     * Loads the file when imported through the input file field
+     * @param {Event} event The Event object of the input
+     */
+    handleImportSaveThroughInput = event => {
+        // Obtain the file uploaded by the user
+        const uploadedFile = event.target.files[0];
+
+        // Extract the information inside the file
+        uploadedFile.text()
+        .then(fileData => {
+            // Load the save, if correct
+            this.#loadSave(fileData);
+        })
+        .catch(error => {
+            console.log("Error: " + error);
+        });
+    }
+
     ////////////////////////////////////
     // HELPER FUNCTIONS
     ////////////////////////////////////
@@ -596,5 +712,24 @@ export class Controller {
         }
 
         this.#view.closeInformationModal();
+    }
+
+    /**
+     * Loads the saved data and refreshes the page if successful.
+     * @param {String} fileData A string in JSON format containing the data of the file imported
+     */
+    #loadSave = fileData => {
+        // Parse the data to a JSON object
+        let saveData = JSON.parse(fileData);
+
+        // Try to import the save received
+        if (this.#saveManager.importSave(saveData)) {
+            // Refresh the window to update the changes
+            // NOTE: This is a hack to easily reapply everything, but ideally, it would be best to cleanly reapply every value to avoid said refresh
+            window.location.reload();
+        } else {
+            // TODO: Need to give feedback to the player that the file selected was not valid
+            console.log("Error: The file imported was not a Fantaser save file.")
+        }
     }
 }

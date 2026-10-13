@@ -6,6 +6,8 @@ export const MAX_NUM_ITEM_REQS = 5;
 ////////////////////////////////////////////////
 // Special Strings
 // Used for Elemental Rift's Level Up requirements
+export const GAME_NAME = "Fantaser";
+export const GAME_VERSION = "vX.X.X";
 export const ELEMENTAL = "ELEMENTAL";
 export const TEMPLATE_STRINGS = {
     TIER1: "{TIER1}",
