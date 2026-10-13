@@ -2,6 +2,7 @@ import { MENUS, RESOURCES, MAX_NUM_ITEM_REQS, CRAFTS } from "../model/data/const
 import { PlayerManager } from "../model/managers/player_manager.js";
 import { View } from "../view/view.js";
 import { RiftsManager } from "../model/managers/rifts_manager.js";
+import { SaveManager } from "../model/managers/save_manajer.js";
 
 export class Controller {
     #view;
@@ -9,6 +10,7 @@ export class Controller {
     //#region Managers
     #playerManager;
     #riftsManager;
+    #saveManager;
     //#endregion
 
     //#region Generic elements
@@ -29,10 +31,31 @@ export class Controller {
     #currentMenu;
     // NOTE: This is not properly protected, as it doesn't check that the Rift currently opened lines up with this variable, if it's modified manually by the player
     #currentRiftSelected;
+    // Boolean to know if the player is trying to delete their progress
+    #isDeleteSaveModalOpen;
 
     constructor() {
-        this.#playerManager = new PlayerManager();
+        this.#isDeleteSaveModalOpen = false;
+
+        this.#saveManager = new SaveManager();
+        this.#playerManager = new PlayerManager(this.#saveManager.getSavedPlayerLevel());
         this.#riftsManager = new RiftsManager();
+
+        // Loop each Resource to update Rift Levels and Resource amounts with their saved values, if they exist
+        Array.from(Object.values(RESOURCES)).forEach(resource => {
+            let level = this.#saveManager.getSavedRiftLevel(resource.ID);
+
+            // If the level obtained was different than 0 (0 is for locked rifts or Resources not tied to one)
+            if (level) {
+                this.#riftsManager.updateRiftLevel(resource.ID, level);
+            }
+
+            let amount = this.#saveManager.getSavedResourceAmount(resource.ID);
+            // If the amount for this Resource is 0, there's no need to update it
+            if (amount) {
+                this.#playerManager.setResourceAmount(resource.ID, amount);
+            }
+        });
 
         this.#resourcesCheckModal = document.getElementById("resources-check-modal");
 
@@ -64,12 +87,12 @@ export class Controller {
         // Loop through every resource
         Array.from(Object.values(RESOURCES)).forEach(resource => {
             // If it's a Tier 1, update it's corresponding display
-            // TODO: Will also have to update every other Resource's display if that's added
+            // TODO: Will also have to update every other Resource's display if a display is added to Tier 2 and higher Resources
             if (resource.TIER == 1) {
                 let amount = this.#playerManager.getResourceAmount(resource.ID);
                 let unlocked = this.#playerManager.isResourceUnlocked(resource.ID)
                 this.#view.initializeResource(resource.ID, unlocked, amount, this.#playerManager.isResourceFull(resource.ID));
-                this.#view.updateRiftDisplay(resource.ID, 1, this.#riftsManager.getImageName(resource.ID), this.#riftsManager.getImageAlt(resource.ID), this.#riftsManager.isRiftMaxLevel(resource.ID), unlocked);
+                this.#view.updateRiftDisplay(resource.ID, this.#riftsManager.getRiftLevel(resource.ID), this.#riftsManager.getImageName(resource.ID), this.#riftsManager.getImageAlt(resource.ID), this.#riftsManager.isRiftMaxLevel(resource.ID), unlocked);
             }
         });
 
@@ -130,8 +153,14 @@ export class Controller {
 
         // TODO: If the resource is at max capacity, will need to show the player some sort of feedback to let them know they can't gain any more until its storage is increased or it's spent somewhere
 
+        let amount = this.#playerManager.getResourceAmount(resource.ID);
+        
         // Update the resource's display amount
-        this.#view.updateResourceDisplay(resource.ID, this.#playerManager.getResourceAmount(resource.ID), this.#playerManager.isResourceFull(resource.ID));
+        this.#view.updateResourceDisplay(resource.ID, amount, this.#playerManager.isResourceFull(resource.ID));
+
+        // Update the saved data with the new resource amount
+        // NOTE: Will have to make sure this (and all other instances) isn't too extreme, could save the information every 1 second or so.
+        this.#saveManager.saveResourceAmount(resource.ID, amount);
     }
 
     /**
@@ -187,12 +216,17 @@ export class Controller {
         craftingReqs.forEach(req => {
             this.#playerManager.removeResourceAmount(req.RESOURCE, req.AMOUNT);
 
+            let newAmount = this.#playerManager.getResourceAmount(req.RESOURCE);
+
             // If this was a Tier 1 Resource
             // NOTE: If a display is added to other Resources in the future, this line will have to be changed
             if (RESOURCES[req.RESOURCE].TIER === 1) {
                 // Refresh the Resource display so it shows the updated value
-                this.#view.updateResourceDisplay(req.RESOURCE, this.#playerManager.getResourceAmount(req.RESOURCE), false);
+                this.#view.updateResourceDisplay(req.RESOURCE, newAmount, false);
             }
+
+            // Update the saved data with the new resource amount
+            this.#saveManager.saveResourceAmount(req.RESOURCE, newAmount);
         });
 
         // Add the Resource crafted to the Player's Storage
@@ -201,6 +235,9 @@ export class Controller {
 
         // Refresh the Crafting Menu so the values update accordingly
         this.#updateCraftingMenu();
+
+        // Update the saved data with the new resource amount
+        this.#saveManager.saveResourceAmount(resourceCrafted, this.#playerManager.getResourceAmount(resourceCrafted));
     }
 
     /**
@@ -217,6 +254,159 @@ export class Controller {
             default:
                 break;
         }
+    }
+
+    /**
+     * Updates all the necessary values when opening the Delete Save modal
+     * NOTE: Since this is done at the same time as opening the modal, if the computer is slow, then it's possible it shows the default values before they're updated
+     */
+    handleDeleteSaveButton = () => {
+        this.#isDeleteSaveModalOpen = true;
+
+        this.#view.updateInformationModal(
+            "Delete Progress",
+            "Are you sure you want to delete your progress up to this point? This cannot be undone!",
+            "DELETE", "Cancel", true
+        );
+    }
+
+    /**
+     * Handles the corresponding behavior based on the message being shown to the player
+     */
+    handleConfirmationButton = () => {
+        if (this.#isDeleteSaveModalOpen) {
+            // Delete the player's save
+            this.#saveManager.deleteSave();
+
+            // Close the modal
+            this.#closeInformationModal();
+            
+            // Update all the values (Easiest way to do this is with a page refresh)
+            window.location.reload();
+        }
+    }
+
+    /**
+     * Calls the necessary functions for the modal to close correctly
+     */
+    handleCancelButton = () => {
+        this.#closeInformationModal();
+    }
+
+    /**
+     * Exports the save file as a JSON object in a text file
+     * NOTE: Could look into exporting it as a binary file instead?
+     */
+    handleExportSave = () => {
+        // Obtain the player data
+        let saveData = this.#saveManager.exportSave();
+
+        // Create object that can be saved to a file using the save data in JSON format
+        let fileObject = new Blob([JSON.stringify(saveData, null, 2)], {
+            type: "application/json",
+        });
+
+        // Check whether this browser supports opening a save file window
+        if ("showSaveFilePicker" in window) {
+            window.showSaveFilePicker()
+            .then(newHandle => {
+                return newHandle.createWritable();
+            })
+            .then(writableStream => {
+                // Write the player data to the file specified by the user
+                return writableStream.write(fileObject)
+                .then(() => writableStream.close());
+            })
+            .catch(error => {
+                if (error.name !== "AbortError") {
+                    console.log("Error: " + error);
+                }
+            });
+        // If the browser doesn't support the save file window (ie. FireFox), we use the workaround
+        // NOTE: The following code will create a new file every time. If a file with the same name already exists, it will create a second one with a number at the end. Ex. "FantaserSave (1).txt"
+        } else {
+            // Create a temporary link element
+            let element = document.createElement("a");
+            // Set the name of the file
+            element.setAttribute("download", "FantaserSave.txt")
+            // When the link is pressed, it will save a new file using the file object created earlier
+            element.setAttribute("href", URL.createObjectURL(fileObject));
+            // Forceibly click the link so it executes the code above
+            element.click();
+            // Get rid of the temporary element
+            // NOTE: Not sure if this line actually does anything. Check later.
+            element.remove();
+        }
+    }
+
+    /**
+     * Imports and loads the save if the browser supports "showOpenFilePicker". Otherwise, it triggers the file input for the user to choose a file
+     */
+    handleImportSave = () => {
+        // Check whether this browser supports opening an open file window
+        if ("showOpenFilePicker" in window) {
+            let filePickerOptions = {
+            types: [
+                    {
+                        description: "Text",
+                        accept: {
+                            "text/plain": [".txt"],
+                        },
+                    },
+                ],
+                excludeAcceptAllOption: true,
+                multiple: false,
+            };
+
+            window.showOpenFilePicker(filePickerOptions)
+            .then(fileHandle => {
+                // Grab the first file (even with the option "multiple" set to false, the file still comes inside an array)
+                return fileHandle[0].getFile();
+            })
+            .then(fileObject => {
+                // Extract the file's data
+                return fileObject.text();
+            })
+            .then(fileData => {
+                try {
+                    this.#loadSave(fileData);
+                } catch (error) {
+                    // TODO: Show feedback to the user that the file wasn't correct
+                    console.log("Error: This file was not a valid JSON.");
+                }
+            })
+            .catch(error => {
+                if (error.name !== "AbortError") {
+                    console.log("Error: " + error);
+                }
+            })
+        // The browser doesn't support showOpenFilePicker, trigger the file input
+        } else {
+            let fileUploadInput = document.getElementById("file-upload-input")
+            
+            if (fileUploadInput) {
+                fileUploadInput.click();
+            }
+        }
+    }
+
+    /**
+     * Loads the file when imported through the input file field
+     * @param {Event} event The Event object of the input
+     */
+    handleImportSaveThroughInput = event => {
+        // Obtain the file uploaded by the user
+        const uploadedFile = event.target.files[0];
+
+        // Extract the information inside the file
+        uploadedFile.text()
+        .then(fileData => {
+            // Load the save, if correct
+            this.#loadSave(fileData);
+        })
+        .catch(error => {
+            console.log("Error: " + error);
+        });
     }
 
     ////////////////////////////////////
@@ -411,6 +601,9 @@ export class Controller {
 
             this.#playerManager.levelUp();
 
+            // Save the new Player's level
+            this.#saveManager.savePlayerLevel(this.#playerManager.getLevel());
+
             // If the Energy Rift is now unlocked
             if (!wasEnergyRiftUnlocked && this.#playerManager.isResourceUnlocked(energyRiftResource)) {
                 // Update the Byte Energy's display
@@ -430,12 +623,17 @@ export class Controller {
             Array.from(requirements).forEach(req => {
                 this.#playerManager.removeResourceAmount(req.RESOURCE, req.AMOUNT);
 
+                let newAmount = this.#playerManager.getResourceAmount(req.RESOURCE);
+
                 // If the Resource modified was a Tier 1 resource
                 // TODO: Might have to come back and revise this if a display for a tier 2+ resource is added
                 if (RESOURCES[req.RESOURCE].TIER === 1) {
                     // Update its display on the main page
-                    this.#view.updateResourceDisplay(req.RESOURCE, this.#playerManager.getResourceAmount(req.RESOURCE), this.#playerManager.isResourceFull(req.RESOURCE));
+                    this.#view.updateResourceDisplay(req.RESOURCE, newAmount, this.#playerManager.isResourceFull(req.RESOURCE));
                 }
+                
+                // Update the saved data with the new resource amount
+                this.#saveManager.saveResourceAmount(req.RESOURCE, newAmount);
             });
         }
 
@@ -482,11 +680,16 @@ export class Controller {
         nextLevelRequirements.forEach(requirement => {
             this.#playerManager.removeResourceAmount(requirement.RESOURCE, requirement.AMOUNT);
 
+            let newAmount = this.#playerManager.getResourceAmount(requirement.RESOURCE);
+
             // If the resource was Tier 1
             if (RESOURCES[requirement.RESOURCE].TIER === 1) {
                 // Update the display
-                this.#view.updateResourceDisplay(requirement.RESOURCE, this.#playerManager.getResourceAmount(requirement.RESOURCE), this.#playerManager.isResourceFull(requirement.RESOURCE));
+                this.#view.updateResourceDisplay(requirement.RESOURCE, newAmount, this.#playerManager.isResourceFull(requirement.RESOURCE));
             }
+
+            // Update the saved data with the new resource amount
+            this.#saveManager.saveResourceAmount(requirement.RESOURCE, newAmount);
         });
 
         // TODO: Double check #currentRiftSelected lines up with the Rift currently opened?
@@ -494,8 +697,39 @@ export class Controller {
         // Tell the RiftsManager to increase the selected Rift's Level
         this.#riftsManager.levelUpRift(this.#currentRiftSelected);
 
+        // Save the new Rift level
+        this.#saveManager.saveRiftLevel(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected));
+
         this.#updateLevelUpRiftModal();
 
         this.#view.updateRiftDisplay(this.#currentRiftSelected, this.#riftsManager.getRiftLevel(this.#currentRiftSelected), this.#riftsManager.getImageName(this.#currentRiftSelected), this.#riftsManager.getImageAlt(this.#currentRiftSelected), this.#riftsManager.isRiftMaxLevel(this.#currentRiftSelected));
+    }
+
+    #closeInformationModal = () => {
+        if (this.#isDeleteSaveModalOpen) {
+            // Player is no longer trying to delete their progress
+            this.#isDeleteSaveModalOpen = false;
+        }
+
+        this.#view.closeInformationModal();
+    }
+
+    /**
+     * Loads the saved data and refreshes the page if successful.
+     * @param {String} fileData A string in JSON format containing the data of the file imported
+     */
+    #loadSave = fileData => {
+        // Parse the data to a JSON object
+        let saveData = JSON.parse(fileData);
+
+        // Try to import the save received
+        if (this.#saveManager.importSave(saveData)) {
+            // Refresh the window to update the changes
+            // NOTE: This is a hack to easily reapply everything, but ideally, it would be best to cleanly reapply every value to avoid said refresh
+            window.location.reload();
+        } else {
+            // TODO: Need to give feedback to the player that the file selected was not valid
+            console.log("Error: The file imported was not a Fantaser save file.")
+        }
     }
 }

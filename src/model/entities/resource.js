@@ -52,6 +52,14 @@ export class Resource {
         return true;
     }
 
+    /**
+     * Sets this Resource's amount to the value passed in (Used mostly for loading saved data)
+     * @param {Number} amount The new amount of this resource
+     */
+    setAmount(amount) {
+        this.#amount = Math.min(amount, this.#capacity);
+    }
+
     ////////////////////////////////////////////////
     // HELPER FUNCTIONS
     ////////////////////////////////////////////////

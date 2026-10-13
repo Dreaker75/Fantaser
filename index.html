@@ -65,6 +65,12 @@
     </p>
   </template>
   <header>
+    <div class="float-right">
+      <button class="btn btn-danger mt-1 me-1" id="delete-save-button" data-bs-toggle="modal" data-bs-target="#information-modal">DELETE SAVE</button>
+      <button id="export-save-button" class="btn btn-primary mt-1 me-1">Export Save</button>
+      <input type="file" id="file-upload-input" accept="text/plain">
+      <button id="import-save-button" class="btn btn-primary mt-1 me-1">Import Save</button>
+    </div>
     <div class="row m-1 justify-content-center" id="resources-display">
     </div>
     <nav>
@@ -104,6 +110,22 @@
           </div>
           <div class="modal-body">
             <button id="modal-button-check-successful" disabled>FILL OUT THE BUTTON'S TEXT</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal used to provide non-game information to the player, such as when deleting the save data -->
+    <div id="information-modal" class="modal fade">
+      <div class="modal-dialog text-center">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">FILL OUT THE MODAL TITLE</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-main-text">FILL OUT THE MAIN TEXT OF THE MODAL</p>
+            <button class="btn btn-success" id="modal-confirmation-button">FILL OUT THE BUTTON'S TEXT</button>
+            <button class="btn btn-secondary" id="modal-cancel-button">FILL OUT THE BUTTON'S TEXT</button>
           </div>
         </div>
       </div>

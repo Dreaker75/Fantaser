@@ -8,6 +8,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // Create the controller
     let controller = new Controller();
 
+    // Save-related buttons
+    document.getElementById("delete-save-button").addEventListener("click", controller.handleDeleteSaveButton);
+
+    document.getElementById("modal-confirmation-button").addEventListener("click", controller.handleConfirmationButton);
+
+    document.getElementById("modal-cancel-button").addEventListener("click", controller.handleCancelButton);
+
+    document.getElementById("export-save-button").addEventListener("click", controller.handleExportSave);
+    document.getElementById("import-save-button").addEventListener("click", controller.handleImportSave);
+    document.getElementById("file-upload-input").addEventListener("change", controller.handleImportSaveThroughInput);
+
     // Main menu buttons
     document.getElementById("rifts-menu-button").addEventListener("click", () => {
         controller.openNewMenu(MENUS.RIFTS);

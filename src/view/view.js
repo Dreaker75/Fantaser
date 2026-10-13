@@ -9,6 +9,13 @@ export class View {
     // Menu elements
     #mainMenusDivs = {};
 
+    // Information modal elements
+    #informationModal;
+    #informationModalTitle;
+    #informationModalText;
+    #informationModalConfirmButton;
+    #informationModalCancelButton;
+
     // Resource check modal elements
     #resourceCheckModal;
     #resourceCheckModalTitle;
@@ -28,6 +35,12 @@ export class View {
         this.#mainMenusDivs[MENUS.RIFTS] = document.getElementById("rifts-menu");
         this.#mainMenusDivs[MENUS.PLAYER] = document.getElementById("player-menu");
         this.#mainMenusDivs[MENUS.CRAFT] = document.getElementById("craft-menu");
+
+        this.#informationModal = document.getElementById("information-modal");
+        this.#informationModalTitle = this.#informationModal.querySelector(".modal-title");
+        this.#informationModalText = this.#informationModal.querySelector(".modal-main-text");
+        this.#informationModalConfirmButton = this.#informationModal.querySelector("#modal-confirmation-button");
+        this.#informationModalCancelButton = this.#informationModal.querySelector("#modal-cancel-button");
         
         this.#resourceCheckModal = document.getElementById("resources-check-modal");
         this.#resourceCheckModalTitle = this.#resourceCheckModal.querySelector(".modal-title");
@@ -299,6 +312,34 @@ export class View {
             // Activate the button to level up the Rift
             this.#riftDisplays[_resourceId].querySelector("button[name='level-up-button']").removeAttribute("disabled");
         }
+    }
+
+    /**
+     * Updates the information modal's values. If the modal is showing a dangerous action, it also styles it appropriately
+     * @param {String} title The title of the modal
+     * @param {String} mainText The body of the modal
+     * @param {String} confirmationButtonText The text of the confirmation button
+     * @param {String} cancelButtonText The text of the cancel button
+     * @param {boolean} isDangerous Whether this is a dangerous action
+     */
+    updateInformationModal(title, mainText, confirmationButtonText, cancelButtonText, isDangerous = false) {
+        // Set the modal's texts
+        this.#informationModalTitle.textContent = title;
+        this.#informationModalText.textContent = mainText;
+        this.#informationModalConfirmButton.textContent = confirmationButtonText;
+        this.#informationModalCancelButton.textContent = cancelButtonText;
+
+        // We give the success button the danger class, since this is a dangerous action. This class needs to be removed when the modal is closed
+        if (isDangerous) {
+            this.#informationModalConfirmButton.classList.add("btn-danger");
+        }
+    }
+
+    closeInformationModal() {
+        // The btn-danger class needs to be removed from the success button for later messages
+        this.#informationModalConfirmButton.classList.remove("btn-danger");
+
+        bootstrap.Modal.getInstance(this.#informationModal).hide();
     }
 
     ////////////////////////////////////
